@@ -49,7 +49,7 @@ $JGAbody = @{
 #Write-Output $JGAbody
 
 # Invoke the REST method to create a Jump Group
-$JGAresponse = Invoke-RestMethod -Uri 'https://pra-chris-butchart.beyondtrustcloud.com/api/config/v1/jump-group' -Method Post -Headers $headers -Body $JGAbody
+$JGAresponse = Invoke-RestMethod -Uri 'https://URL.beyondtrustcloud.com/api/config/v1/jump-group' -Method Post -Headers $headers -Body $JGAbody
 
 # Output the response
 Write-Output "This is what was created:"
@@ -80,7 +80,7 @@ $GPbody = @{
 #Write-Output $GPbody
 
 # Invoke REST Method to add Jump Group to pre-defined Group Policy
-$GPEresponse = Invoke-RestMethod -Uri "https://pra-chris-butchart.beyondtrustcloud.com/api/config/v1/group-policy/$GPID/jump-group" -Method Post -Headers $headers -Body $GPbody
+$GPEresponse = Invoke-RestMethod -Uri "https://URL.beyondtrustcloud.com/api/config/v1/group-policy/$GPID/jump-group" -Method Post -Headers $headers -Body $GPbody
 
 # Output the response as JSON
 Write-Output "This is what was added to your Group Policy:"
