@@ -78,7 +78,7 @@ $JGID = $JGAresponse.id
 
 
 # Body for the POST Group policy edit request
-# jump item role set as administrator
+# jump item role set as administrator, note, older versions this seems to throw an erorr, try value of 0
 
 $GPbody = @{
     "jump_group_id" = $JGID
