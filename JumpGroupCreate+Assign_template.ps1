@@ -34,14 +34,62 @@ $headers.Add("Authorization", "Bearer $token")
 #endregion
 ###########################################################################
 
+####Create a Group Policy####
+
+$GroupName = Read-Host -Prompt 'Please name the object you would like to creaet, Group Policy and Jump Group will share the same name: '
+
+
+# Construct the JSON body for the request
+$GPAddbody = @{
+  "name" = $GroupName
+  "perm_access_allowed" = $true
+  "access_perm_status" = "defined"
+  "perm_share_other_team" = $false
+  "perm_invite_external_user" = $false
+  "perm_session_idle_timeout" = -1
+  "perm_extended_availability_mode_allowed" = $false
+  "perm_edit_external_key" = $false
+  "perm_collaborate" = $false
+  "perm_collaborate_control" = $false
+  "perm_jump_client" = $false
+  "perm_local_jump" = $false
+  "perm_remote_jump" = $true
+  "perm_remote_vnc" = $false
+  "perm_remote_rdp" = $true
+  "perm_shell_jump" = $false
+  "perm_web_jump" = $false
+  "perm_protocol_tunnel" = $false
+  "default_jump_item_role_id" = 6
+  "private_jump_item_role_id" = 1
+  "inferior_jump_item_role_id" = 1
+  "unassigned_jump_item_role_id" = 1
+} | ConvertTo-Json
+
+# Output the JSON body for debugging purposes
+Write-Output $GPAddbody
+
+# Construct the full URL for the group policy request
+$GPAddUrl = "$baseUrl/group-policy"
+
+# Output the full URL for debugging purposes
+Write-Output $GPAddUrl
+
+# Invoke the REST method to create a Group Policy
+try {
+    $GPAddresponse = Invoke-RestMethod -Uri $GPAddUrl -Method Post -Headers $headers -Body $GPAddbody
+    # Output the response
+    $GPAddresponse | ConvertTo-Json
+} catch {
+    # Catch and output any errors
+    Write-Error "Error occurred: $_"
+}
 
 ####Create a Jump Group####
 
-$JumpGroupName = Read-Host -Prompt 'Please name the Jump Group you would like to create: '
 
 # Construct the JSON body for the request
 $JGAbody = @{
-    "name" = $JumpGroupName
+    "name" = $GroupName
     "comments" = "API Generated"
 } | ConvertTo-Json
 
@@ -64,8 +112,12 @@ try {
     Write-Error "Error occurred: $_"
 }
 
+# Output the response
+#Write-Output "This is what was created:"
+#$JGAresponse | ConvertTo-Json
 
-# need to extract jumpgroup id here and set as variable to pass to the next bit
+
+#get the ID of the new Jump Group so it can be put into the Group Policy
 
 $JGID = $JGAresponse.id
 
@@ -78,11 +130,13 @@ $JGID = $JGAresponse.id
 
 
 # Body for the POST Group policy edit request
-# jump item role set as administrator, note, older versions this seems to throw an erorr, try value of 0
+
+#get the ID of the new Group Policy to create the url 
+$GPID = $GPAddresponse.id
 
 $GPbody = @{
     "jump_group_id" = $JGID
-	"jump_item_role_id" = 6
+	"jump_item_role_id" = 0
 } | ConvertTo-Json
 
 
@@ -103,3 +157,8 @@ try {
     # Catch and output any errors
     Write-Error "Error occurred: $_"
 }
+
+# Output the response as JSON
+#Write-Output "This is what was added to your Group Policy:"
+#$GPEresponse | ConvertTo-Json
+
