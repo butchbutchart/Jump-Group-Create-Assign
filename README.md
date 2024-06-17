@@ -3,6 +3,7 @@ Adds a PRA Jump Group then assigns it to a Group Policy with the Jump item Role 
 
 A geographic prefix is added to approximate this data coming from an automation tool when a user makes a request, the script just asks the user for it.
 
-You can use the
+You can use this script to quickly create interrelated PRA objects
 
-![image](https://github.com/butchbutchart/Jump-Group-Add-Assign/assets/42536650/8c632b2f-f3d4-4005-a374-35faedaa24e6)
+![image](https://github.com/butchbutchart/Jump-Group-Add-Assign/assets/42536650/9ccca2e8-4841-4447-a07b-0482941a0e2b)
+
