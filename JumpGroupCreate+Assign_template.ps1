@@ -134,7 +134,7 @@ $JGID = $JGAresponse.id
 #Write-Output $id
 
 
-####Add Jump Group to pre-defined Admin Group Policy, this could be supplied as a variable####
+####Add Jump Group to Admin Group Policy####
 
 #Write-Output $GPID
 
