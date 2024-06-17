@@ -4,10 +4,6 @@ $baseUrl = "https://URL.beyondtrustcloud.com/api/config/v1"
 $client_id = "--";
 $secret = "--"; 
 
-#Group Policy ID, this is what we are adding the Jump Group to, it will be a number visible in the url when editing a group policy
-$GPID = "--"
-
-
 #endregion creds
 ###########################################################################
 
@@ -34,14 +30,25 @@ $headers.Add("Authorization", "Bearer $token")
 #endregion
 ###########################################################################
 
-####Create a Group Policy####
-
-$GroupName = Read-Host -Prompt 'Please name the object you would like to creaet, Group Policy and Jump Group will share the same name: '
 
 
+$SubmittedGroupName = Read-Host -Prompt 'Please name the object you would like to create, Group Policy and Jump Group will share the same name: '
+
+$Prefix = Read-Host -Prompt 'Please name the region specific prefix that will be used to identify the location of the object: '
+
+
+
+$GroupName = ($prefix+'-'+$SubmittedGroupName)
+
+Write-Output $GroupName
+
+####Create a Group Policy for Administrators of the new Jump Group####
 # Construct the JSON body for the request
-$GPAddbody = @{
-  "name" = $GroupName
+
+$AdminJumpGroupName = ($GroupName+'-'+'Administrators')
+
+$AdminGPAddbody = @{
+  "name" = $AdminJumpGroupName
   "perm_access_allowed" = $true
   "access_perm_status" = "defined"
   "perm_share_other_team" = $false
@@ -66,7 +73,7 @@ $GPAddbody = @{
 } | ConvertTo-Json
 
 # Output the JSON body for debugging purposes
-Write-Output $GPAddbody
+Write-Output $AdminGPAddbody
 
 # Construct the full URL for the group policy request
 $GPAddUrl = "$baseUrl/group-policy"
@@ -76,13 +83,16 @@ Write-Output $GPAddUrl
 
 # Invoke the REST method to create a Group Policy
 try {
-    $GPAddresponse = Invoke-RestMethod -Uri $GPAddUrl -Method Post -Headers $headers -Body $GPAddbody
+    $AdminGPAddresponse = Invoke-RestMethod -Uri $GPAddUrl -Method Post -Headers $headers -Body $AdminGPAddbody
     # Output the response
-    $GPAddresponse | ConvertTo-Json
+    $AdminGPAddresponse | ConvertTo-Json
 } catch {
     # Catch and output any errors
     Write-Error "Error occurred: $_"
 }
+
+
+
 
 ####Create a Jump Group####
 
@@ -124,15 +134,15 @@ $JGID = $JGAresponse.id
 #Write-Output $id
 
 
-####Add Jump Group to pre-defined Group Policy, this could be supplied as a variable####
+####Add Jump Group to pre-defined Admin Group Policy, this could be supplied as a variable####
 
 #Write-Output $GPID
 
 
 # Body for the POST Group policy edit request
 
-#get the ID of the new Group Policy to create the url 
-$GPID = $GPAddresponse.id
+#get the ID of the new Admin Group Policy to create the url 
+$AdminGPID = $AdminGPAddresponse.id
 
 $GPbody = @{
     "jump_group_id" = $JGID
@@ -143,7 +153,7 @@ $GPbody = @{
 #Write-Output $GPbody
 
 # Construct the full URL
-$fullUrl = "$baseUrl/group-policy/$GPID/jump-group"
+$fullUrl = "$baseUrl/group-policy/$AdminGPID/jump-group"
 
 # Output the full URL for debugging purposes
 Write-Output $fullUrlGP
@@ -158,7 +168,80 @@ try {
     Write-Error "Error occurred: $_"
 }
 
-# Output the response as JSON
-#Write-Output "This is what was added to your Group Policy:"
-#$GPEresponse | ConvertTo-Json
 
+####Create a Group Policy for Standard Users - Start Sessions Only - of the new Jump Group####
+# Construct the JSON body for the request
+
+$StanJumpGroupName = ($GroupName+'-'+'Standard Users')
+
+$StanGPAddbody = @{
+  "name" = $StanJumpGroupName
+  "perm_access_allowed" = $true
+  "access_perm_status" = "defined"
+  "perm_share_other_team" = $false
+  "perm_invite_external_user" = $false
+  "perm_session_idle_timeout" = -1
+  "perm_extended_availability_mode_allowed" = $false
+  "perm_edit_external_key" = $false
+  "perm_collaborate" = $false
+  "perm_collaborate_control" = $false
+  "perm_jump_client" = $false
+  "perm_local_jump" = $false
+  "perm_remote_jump" = $true
+  "perm_remote_vnc" = $false
+  "perm_remote_rdp" = $true
+  "perm_shell_jump" = $false
+  "perm_web_jump" = $false
+  "perm_protocol_tunnel" = $false
+  "default_jump_item_role_id" = 7
+  "private_jump_item_role_id" = 1
+  "inferior_jump_item_role_id" = 1
+  "unassigned_jump_item_role_id" = 1
+} | ConvertTo-Json
+
+# Output the JSON body for debugging purposes
+Write-Output $StanGPAddbody
+
+# Construct the full URL for the group policy request
+$GPAddUrl = "$baseUrl/group-policy"
+
+# Output the full URL for debugging purposes
+Write-Output $GPAddUrl
+
+# Invoke the REST method to create a Group Policy
+try {
+    $StanGPAddresponse = Invoke-RestMethod -Uri $GPAddUrl -Method Post -Headers $headers -Body $StanGPAddbody
+    # Output the response
+    $StanGPAddresponse | ConvertTo-Json
+} catch {
+    # Catch and output any errors
+    Write-Error "Error occurred: $_"
+}
+
+
+#######################get the ID of the new Standard Group Policy to create the url 
+$StanGPID = $StanGPAddresponse.id
+
+$GPbody = @{
+    "jump_group_id" = $JGID
+	"jump_item_role_id" = 0
+} | ConvertTo-Json
+
+
+#Write-Output $GPbody
+
+# Construct the full URL
+$fullUrl = "$baseUrl/group-policy/$StanGPID/jump-group"
+
+# Output the full URL for debugging purposes
+Write-Output $fullUrlGP
+
+# Invoke the REST method to add Jump Group to pre-defined Group Policy
+try {
+    $StanGPEresponse = Invoke-RestMethod -Uri $fullUrl -Method Post -Headers $headers -Body $GPbody
+    # Output the response
+    $StanGPEresponse | ConvertTo-Json
+} catch {
+    # Catch and output any errors
+    Write-Error "Error occurred: $_"
+}
