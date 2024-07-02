@@ -1,5 +1,6 @@
 Create Group Policy, Jump Group and Assign Jump Group to Group Policy
-Adds a PRA Jump Group then assigns it to a Group Policy with the Jump item Role set to Administrator
+Creates a PRA Jump Group and two Group Policies, then adding the Jump Group to the policies.
+The Admin Group Policy has a deafult Jump Item Role of Administrator, the Standard User Group Policy has a default Jump Item Role of "Start Sessions Only"
 
 A geographic prefix is added to approximate this data coming from an automation tool when a user makes a request, the script just asks the user for it.
 
