@@ -116,8 +116,7 @@ try {
 	
 	
     # Output the response
-	Write-Output "Administrative Group Policy Created: $($AdminGPAddresponse.name)"
-	Write-Output -
+	Write-Output "Administrative User Group Policy Created: $($AdminGPAddresponse.name)"
 } catch {
     # Catch and output any errors
     Write-Error "Error occurred: $_"
@@ -208,8 +207,7 @@ try {
 	
 	
     # Output the response
-	Write-Output "Created Standard User Jump Group: $($StanGPAddresponse.name)"
-	Write-Output -
+	Write-Output "Standard User Group Policy Created: $($StanGPAddresponse.name)"
 } catch {
     # Catch and output any errors
     Write-Error "Error occurred: $_"
