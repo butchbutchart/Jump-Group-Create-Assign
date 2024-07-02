@@ -30,7 +30,7 @@ $headers.Add("Authorization", "Bearer $token")
 #endregion
 ###########################################################################
 
-
+####Ask user for object names, (group policies will use the same name as jump groups with an additional suffix) and their region, this is information that would be passed to the script via your automation solution
 
 $SubmittedGroupName = Read-Host -Prompt 'Please name the object you would like to create, Group Policy and Jump Group will share the same name: '
 
@@ -40,7 +40,40 @@ $Prefix = Read-Host -Prompt 'Please name the region specific prefix that will be
 
 $GroupName = ($prefix+'-'+$SubmittedGroupName)
 
-Write-Output $GroupName
+Write-Output -
+Write-Output "Root Object Name: $($GroupName)"
+Write-Output -
+
+####Create a Jump Group####
+
+
+# Construct the JSON body for the request
+$JGAbody = @{
+    "name" = $GroupName
+    "comments" = "API Generated"
+} | ConvertTo-Json
+
+
+# Construct the full URL for the jump group request
+$jumpGroupUrl = "$baseUrl/jump-group"
+
+
+# Invoke the REST method to create a Jump Group
+try {
+    $JGAresponse = Invoke-RestMethod -Uri $jumpGroupUrl -Method Post -Headers $headers -Body $JGAbody
+    # Output the response
+	Write-Output "Jump Group Created:$($JGAresponse.name)"
+	Write-Output -
+} catch {
+    # Catch and output any errors
+    Write-Error "Error occurred: $_"
+}
+
+
+
+#####get the ID of the new Jump Group so it can be put into the Group Policy
+
+$JGID = $JGAresponse.id
 
 ####Create a Group Policy for Administrators of the new Jump Group####
 # Construct the JSON body for the request
@@ -72,20 +105,19 @@ $AdminGPAddbody = @{
   "unassigned_jump_item_role_id" = 1
 } | ConvertTo-Json
 
-# Output the JSON body for debugging purposes
-Write-Output $AdminGPAddbody
 
 # Construct the full URL for the group policy request
 $GPAddUrl = "$baseUrl/group-policy"
 
-# Output the full URL for debugging purposes
-Write-Output $GPAddUrl
 
 # Invoke the REST method to create a Group Policy
 try {
     $AdminGPAddresponse = Invoke-RestMethod -Uri $GPAddUrl -Method Post -Headers $headers -Body $AdminGPAddbody
+	
+	
     # Output the response
-    $AdminGPAddresponse | ConvertTo-Json
+	Write-Output "Administrative Group Policy Created: $($AdminGPAddresponse.name)"
+	Write-Output -
 } catch {
     # Catch and output any errors
     Write-Error "Error occurred: $_"
@@ -94,82 +126,47 @@ try {
 
 
 
-####Create a Jump Group####
 
 
-# Construct the JSON body for the request
-$JGAbody = @{
-    "name" = $GroupName
-    "comments" = "API Generated"
-} | ConvertTo-Json
 
-# Output the JSON body for debugging purposes
-#Write-Output $JGAbody
-
-# Construct the full URL for the jump group request
-$jumpGroupUrl = "$baseUrl/jump-group"
-
-# Output the full URL for debugging purposes
-Write-Output $jumpGroupUrl
-
-# Invoke the REST method to create a Jump Group
-try {
-    $JGAresponse = Invoke-RestMethod -Uri $jumpGroupUrl -Method Post -Headers $headers -Body $JGAbody
-    # Output the response
-    $JGAresponse | ConvertTo-Json
-} catch {
-    # Catch and output any errors
-    Write-Error "Error occurred: $_"
-}
-
-# Output the response
-#Write-Output "This is what was created:"
-#$JGAresponse | ConvertTo-Json
-
-
-#get the ID of the new Jump Group so it can be put into the Group Policy
-
-$JGID = $JGAresponse.id
-
-#Write-Output $id
 
 
 ####Add Jump Group to Admin Group Policy####
-
-#Write-Output $GPID
-
-
-# Body for the POST Group policy edit request
+#### Body for the POST Group policy edit request
 
 #get the ID of the new Admin Group Policy to create the url 
 $AdminGPID = $AdminGPAddresponse.id
 
-$GPbody = @{
+#Add the jump group to the admin group policy. Jump item role is 'User's default' for the admin this is 'Administrator'
+
+$AdGPbody = @{
     "jump_group_id" = $JGID
 	"jump_item_role_id" = 0
 } | ConvertTo-Json
 
 
-#Write-Output $GPbody
 
 # Construct the full URL
 $fullUrl = "$baseUrl/group-policy/$AdminGPID/jump-group"
 
-# Output the full URL for debugging purposes
-Write-Output $fullUrlGP
+
 
 # Invoke the REST method to add Jump Group to pre-defined Group Policy
 try {
-    $GPEresponse = Invoke-RestMethod -Uri $fullUrl -Method Post -Headers $headers -Body $GPbody
+    $GPEresponse = Invoke-RestMethod -Uri $fullUrl -Method Post -Headers $headers -Body $AdGPbody
+	
+	
     # Output the response
-    $GPEresponse | ConvertTo-Json
+	Write-Output "Added Jump Group: $($JGAresponse.name) to Administrators Group Policy"
+	Write-Output -
+
 } catch {
     # Catch and output any errors
     Write-Error "Error occurred: $_"
 }
 
 
-####Create a Group Policy for Standard Users - Start Sessions Only - of the new Jump Group####
+####Create a Group Policy for Standard Users - Start Sessions Only - for the new Jump Group####
 # Construct the JSON body for the request
 
 $StanJumpGroupName = ($GroupName+'-'+'Standard Users')
@@ -199,48 +196,49 @@ $StanGPAddbody = @{
   "unassigned_jump_item_role_id" = 1
 } | ConvertTo-Json
 
-# Output the JSON body for debugging purposes
-Write-Output $StanGPAddbody
 
 # Construct the full URL for the group policy request
 $GPAddUrl = "$baseUrl/group-policy"
 
-# Output the full URL for debugging purposes
-Write-Output $GPAddUrl
+
 
 # Invoke the REST method to create a Group Policy
 try {
     $StanGPAddresponse = Invoke-RestMethod -Uri $GPAddUrl -Method Post -Headers $headers -Body $StanGPAddbody
+	
+	
     # Output the response
-    $StanGPAddresponse | ConvertTo-Json
+	Write-Output "Created Standard User Jump Group: $($StanGPAddresponse.name)"
+	Write-Output -
 } catch {
     # Catch and output any errors
     Write-Error "Error occurred: $_"
 }
 
 
-#######################get the ID of the new Standard Group Policy to create the url 
+##########get the ID of the new Standard Group Policy to create the url 
 $StanGPID = $StanGPAddresponse.id
 
-$GPbody = @{
+### Body that adds the jump group to the group policy. jump item role is 'User's default' for the Standard user group policy this is 'Start Session only'
+
+$StanGPbody = @{
     "jump_group_id" = $JGID
 	"jump_item_role_id" = 0
 } | ConvertTo-Json
 
 
-#Write-Output $GPbody
-
 # Construct the full URL
 $fullUrl = "$baseUrl/group-policy/$StanGPID/jump-group"
 
-# Output the full URL for debugging purposes
-Write-Output $fullUrlGP
 
-# Invoke the REST method to add Jump Group to pre-defined Group Policy
+# Invoke the REST method to add Jump Group to Standard User Group Policy
 try {
-    $StanGPEresponse = Invoke-RestMethod -Uri $fullUrl -Method Post -Headers $headers -Body $GPbody
+    $StanGPEresponse = Invoke-RestMethod -Uri $fullUrl -Method Post -Headers $headers -Body $StanGPbody
+	
+	
     # Output the response
-    $StanGPEresponse | ConvertTo-Json
+	Write-Output "Added Jump Group: $($JGAresponse.name) to Standard Users Group Policy"
+	Write-Output -
 } catch {
     # Catch and output any errors
     Write-Error "Error occurred: $_"
